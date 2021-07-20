@@ -32,41 +32,35 @@
 #ifndef __ARCH_SYS_ARCH_H__
 #define __ARCH_SYS_ARCH_H__ 
 #include "arch/cc.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+
+#ifdef SYS_ARCH_GLOBALS
+#define SYS_ARCH_EXT
+#else
+#define SYS_ARCH_EXT extern
+#endif
  
-u32_t sys_now(void);
+
+#ifdef __cplusplus
+       extern "C" {
+#endif
+         
+#define MAX_QUEUES        		10	// ????????????
+#define MAX_QUEUE_ENTRIES 		20	// ÿ?????????J??
+//LWIP??????????
+typedef struct {
+	  QueueHandle_t xQueue;
+}lwip_mbox;
+
+typedef SemaphoreHandle_t sys_sem_t;    		//LWIP'?õ??z???
+typedef QueueHandle_t sys_mutex_t; 		//LWIP'?õL????z???
+typedef lwip_mbox 	sys_mbox_t;    		//LWIP'?õ????????,???????UCOS??????????
+typedef unsigned char  sys_thread_t;     	//???ID,??????????????
+
+#ifdef __cplusplus
+        }
+#endif
+        
 #endif 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

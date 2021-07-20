@@ -48,7 +48,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>..\OBJ\</OutputDirectory>
-          <OutputName>LED</OutputName>
+          <OutputName>Water</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -186,7 +186,7 @@
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>1</hadIROM2>
             <StupSel>8</StupSel>
-            <useUlib>0</useUlib>
+            <useUlib>1</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
             <nSecure>0</nSecure>
@@ -333,9 +333,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F767xx,USE_HAL_DRIVER</Define>
+              <Define>STM32F767xx,USE_HAL_DRIVER,DEBUG,OS_CRITICAL_METHOD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\FreeRTOS\include;..\FreeRTOS\portable\RVDS\ARM_CM7\r0p1;..\HARDWARE\ADC;..\HARDWARE\LAN8720;..\HARDWARE\MPU;..\HARDWARE\PCF8574;..\HARDWARE\RTC;..\HARDWARE\SDRAM;..\HARDWARE\TIMER;..\HARDWARE\IIC;..\MALLOC;..\LWIP\lwip_app\lwip_comm;..\LWIP\lwip_app\tcp_client_demo;..\LWIP\lwip_app\tcp_server_demo;..\LWIP\lwip_app\udp_demo;..\LWIP\lwip_app\web_server_demo;..\LWIP\lwip-1.4.1\src\include;..\LWIP\lwip-1.4.1\src\include\ipv4;..\LWIP\lwip-1.4.1\src\include\netif;..\LWIP\arch;..\LWIP\lwip-1.4.1\src\api;..\LWIP;..\HARDWARE\KEY</IncludePath>
+              <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\FreeRTOS\include;..\FreeRTOS\portable\RVDS\ARM_CM7\r0p1;..\HARDWARE\ADC;..\HARDWARE\LAN8720;..\HARDWARE\MPU;..\HARDWARE\PCF8574;..\HARDWARE\RTC;..\HARDWARE\SDRAM;..\HARDWARE\MY_TIMER;..\HARDWARE\IIC;..\MALLOC;..\LWIP\lwip_app\lwip_comm;..\LWIP\lwip_app\tcp_client_demo;..\LWIP\lwip_app\tcp_server_demo;..\LWIP\lwip_app\udp_demo;..\LWIP\lwip_app\web_server_demo;..\LWIP\lwip-1.4.1\src\include;..\LWIP\lwip-1.4.1\src\include\ipv4;..\LWIP\lwip-1.4.1\src\include\netif;..\LWIP\arch;..\LWIP\lwip-1.4.1\src\api;..\LWIP;..\HARDWARE\KEY;..\SYSTEM\my_malloc;..\HARDWARE\24C02;..\HARDWARE\MY_SPI;..\HARDWARE\softIIcProxy;..\Modbus\ascii;..\Modbus\functions;..\Modbus\include;..\Modbus\port;..\Modbus\rtu;..\Modbus\tcp;..\ApplicationLayer;..\BusinessLogicLayer;..\FunctionMoudleLayer;..\HARDWARE\ADS_1256;..\Modbus</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -413,6 +413,11 @@
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\SYSTEM\usart\usart.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_malloc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\SYSTEM\my_malloc\my_malloc.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -549,6 +554,11 @@
               <FileType>1</FileType>
               <FilePath>..\HALLIB\STM32F7xx_HAL_Driver\Src\stm32f7xx_hal_tim_ex.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f7xx_hal_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HALLIB\STM32F7xx_HAL_Driver\Src\stm32f7xx_hal_spi.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -558,11 +568,6 @@
               <FileName>led.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\LED\led.c</FilePath>
-            </File>
-            <File>
-              <FileName>adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\HARDWARE\ADC\adc.c</FilePath>
             </File>
             <File>
               <FileName>lan8720.c</FileName>
@@ -590,11 +595,6 @@
               <FilePath>..\HARDWARE\SDRAM\sdram.c</FilePath>
             </File>
             <File>
-              <FileName>timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\HARDWARE\TIMER\timer.c</FilePath>
-            </File>
-            <File>
               <FileName>myiic.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\IIC\myiic.c</FilePath>
@@ -603,6 +603,31 @@
               <FileName>key.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\KEY\key.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\MY_TIMER\my_timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>24C02.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\24C02\24C02.c</FilePath>
+            </File>
+            <File>
+              <FileName>softIIcProxy.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\softIIcProxy\softIIcProxy.c</FilePath>
+            </File>
+            <File>
+              <FileName>my_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\MY_SPI\my_spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>ADS_1256.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\ADS_1256\ADS_1256.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -667,52 +692,12 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>MALLOC</GroupName>
-          <Files>
-            <File>
-              <FileName>malloc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\MALLOC\malloc.c</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
           <GroupName>LWIP_APP</GroupName>
           <Files>
             <File>
               <FileName>lwip_comm.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\LWIP\lwip_app\lwip_comm\lwip_comm.c</FilePath>
-            </File>
-            <File>
-              <FileName>tcp_client_demo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\tcp_client_demo\tcp_client_demo.c</FilePath>
-            </File>
-            <File>
-              <FileName>tcp_server_demo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\tcp_server_demo\tcp_server_demo.c</FilePath>
-            </File>
-            <File>
-              <FileName>udp_demo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\udp_demo\udp_demo.c</FilePath>
-            </File>
-            <File>
-              <FileName>fs.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\web_server_demo\fs.c</FilePath>
-            </File>
-            <File>
-              <FileName>httpd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\web_server_demo\httpd.c</FilePath>
-            </File>
-            <File>
-              <FileName>httpd_cgi_ssi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\LWIP\lwip_app\web_server_demo\httpd_cgi_ssi.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -908,6 +893,186 @@
               <FileName>tcpip.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\LWIP\lwip-1.4.1\src\api\tcpip.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Modbus</GroupName>
+          <Files>
+            <File>
+              <FileName>mbfunccoils.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfunccoils.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbfuncdiag.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfuncdiag.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbfuncdisc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfuncdisc.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbfuncholding.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfuncholding.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbfuncinput.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfuncinput.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbfuncother.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbfuncother.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbutils.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\functions\mbutils.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbascii.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\ascii\mbascii.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbcrc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\rtu\mbcrc.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbrtu.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\rtu\mbrtu.c</FilePath>
+            </File>
+            <File>
+              <FileName>mbtcp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\tcp\mbtcp.c</FilePath>
+            </File>
+            <File>
+              <FileName>mb.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\mb.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Port</GroupName>
+          <Files>
+            <File>
+              <FileName>portevent.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\port\portevent.c</FilePath>
+            </File>
+            <File>
+              <FileName>portserial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\port\portserial.c</FilePath>
+            </File>
+            <File>
+              <FileName>porttimer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Modbus\port\porttimer.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ApplicationLayer</GroupName>
+          <Files>
+            <File>
+              <FileName>lwip_client_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ApplicationLayer\lwip_client_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>RTOS_Task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\ApplicationLayer\RTOS_Task.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>BusinessLogicLayer</GroupName>
+          <Files>
+            <File>
+              <FileName>BLL_Alarm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\BLL_Alarm.c</FilePath>
+            </File>
+            <File>
+              <FileName>BLL_MainFsm.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\BLL_MainFsm.c</FilePath>
+            </File>
+            <File>
+              <FileName>BLL_Modbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\BLL_Modbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>Mersm_Debug.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\Mersm_Debug.c</FilePath>
+            </File>
+            <File>
+              <FileName>Mersm_Dry.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\Mersm_Dry.c</FilePath>
+            </File>
+            <File>
+              <FileName>Mersm_LeakTest.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\Mersm_LeakTest.c</FilePath>
+            </File>
+            <File>
+              <FileName>Mersm_Test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BusinessLogicLayer\Mersm_Test.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>FunctionMoudleLayer</GroupName>
+          <Files>
+            <File>
+              <FileName>FML_Daq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_Daq.c</FilePath>
+            </File>
+            <File>
+              <FileName>FML_DelayTime.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_DelayTime.c</FilePath>
+            </File>
+            <File>
+              <FileName>FML_ExtProporV.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_ExtProporV.c</FilePath>
+            </File>
+            <File>
+              <FileName>FML_ExtSignal.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_ExtSignal.c</FilePath>
+            </File>
+            <File>
+              <FileName>FML_ExtValve.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_ExtValve.c</FilePath>
+            </File>
+            <File>
+              <FileName>FML_Grat.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\FML_Grat.c</FilePath>
+            </File>
+            <File>
+              <FileName>GeneralFunc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FunctionMoudleLayer\GeneralFunc.c</FilePath>
             </File>
           </Files>
         </Group>

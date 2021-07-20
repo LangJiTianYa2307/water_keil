@@ -29,11 +29,13 @@
  * Author: Adam Dunkels <adam@sics.se>
  *
  */
+
 #ifndef __CC_H__
 #define __CC_H__
 
 #include "cpu.h"
 #include "stdio.h"
+#include "sys_arch.h"
 
 /*-------------data type------------------------------------------------------*/
 
@@ -48,10 +50,17 @@ typedef int sys_prot_t;
 
 /*-------------critical region protection (depends on uC/OS-II setting)-------*/
 
-#if OS_CRITICAL_METHOD == 1
-#define SYS_ARCH_DECL_PROTECT(lev)
-#define SYS_ARCH_PROTECT(lev)		CPU_INT_DIS()
-#define SYS_ARCH_UNPROTECT(lev)		CPU_INT_EN()
+#ifdef OS_CRITICAL_METHOD
+
+#define SCB_ICSR_REG		( * ( ( volatile uint32_t * ) 0xe000ed04 ) )
+
+
+extern uint32_t Enter_Critical(void);
+extern void Exit_Critical(uint32_t lev);
+
+#define SYS_ARCH_DECL_PROTECT(lev)  u32_t lev
+#define SYS_ARCH_PROTECT(lev)		    lev = Enter_Critical()
+#define SYS_ARCH_UNPROTECT(lev)		  Exit_Critical(lev)
 #endif
 
 #if OS_CRITICAL_METHOD == 3  //method 3 is used in this port.

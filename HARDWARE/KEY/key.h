@@ -1,28 +1,63 @@
+/*
+ * @Descripttion: 
+ * @version: 
+ * @Author: PanHan
+ * @Date: 2020-01-14 11:23:10
+ * @LastEditors: PanHan
+ * @LastEditTime: 2020-04-14 09:14:07
+ * @FilePath: \water_gcc\Src\HardwareProxy\key.h
+ */
 #ifndef _KEY_H
 #define _KEY_H
 #include "sys.h"
-//////////////////////////////////////////////////////////////////////////////////	 
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK STM32F7开发板
-//KEY驱动代码	   
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//创建日期:2015/11/27
-//版本：V1.0
-//版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2014-2024
-//All rights reserved									  
-//////////////////////////////////////////////////////////////////////////////////
-#define KEY0        HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_3)  //KEY0按键PH3
-#define KEY1        HAL_GPIO_ReadPin(GPIOH,GPIO_PIN_2)  //KEY1按键PH2
-#define KEY2        HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13) //KEY2按键PC13
-#define WK_UP       HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_0)  //WKUP按键PA0
 
-#define KEY0_PRES 	1
-#define KEY1_PRES	2
-#define KEY2_PRES	3
-#define WKUP_PRES   4
+#ifdef __cplusplus
+       extern "C" {
+#endif
 
-void KEY_Init(void);
-u8 KEY_Scan(u8 mode);
+
+/*外部开关型信号量定义*/
+typedef enum
+{
+	WATER_DECT_SING = 0,  //液位开关
+	VACUUM_SING,          //真空传感器
+	AIR_PRES_SING,         //压力传感器
+	H_CLY_POS_SING,           //气缸位置
+	L_CLY_POS_SING,           //气缸位置
+	GRAT_SING,             //光栅信号
+  SING_MAX              //传感器信号统计
+}ExitSing_t;
+
+//传感器触发方式
+typedef enum
+{
+  LOW_LEVEL_TRIG,    //低电平触发
+  HIGH_LEVEL_TRIG  //高电平触发
+}VolTrigType;
+
+//传感器状态
+typedef enum
+{
+  TRIG_OFF,   //未触发
+  TRIG_ON,    //触发
+}SensorState;
+
+//开关传感器
+typedef struct _SwitchSensor SwitchSensor;
+struct _SwitchSensor
+{
+  void (* init)(SwitchSensor * me);
+  u8 (* singDetect)(SwitchSensor * me, SensorState * state); //信号检测
+  void (* setTrigCountLimit)(SwitchSensor * me, u32 trig_on, u32 trig_off);//设置触发计数
+  void (* setTrigType)(SwitchSensor * me, VolTrigType type);//设置触发电平
+  
+  void * private_data;  //私有数据
+};
+SwitchSensor * SwitchSensor_create(ExitSing_t type);
+
+void extIO_Init(void);         
+#ifdef __cplusplus
+        }
+#endif
+        
 #endif
