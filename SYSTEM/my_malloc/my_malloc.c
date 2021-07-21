@@ -1,316 +1,156 @@
-#include <stdlib.h>
+#include "malloc.h"
+ 
 
-/* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
-all the API functions to use the MPU wrappers.  That should only be done when
-task.h is included from an application file. */
-#define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+//内存池(32字节对齐)
+__align(64) u8 mem1base[MEM1_MAX_SIZE];													//内部SRAM内存池
+__align(64) u8 mem2base[MEM2_MAX_SIZE] __attribute__((at(0XC01F4000)));					//外部SDRAM内存池,前面2M给LTDC用了(1280*800*2)
+__align(64) u8 mem3base[MEM3_MAX_SIZE] __attribute__((at(0X20000000)));					//内部DTCM内存池
+//内存管理表
+u32 mem1mapbase[MEM1_ALLOC_TABLE_SIZE];													//内部SRAM内存池MAP
+u32 mem2mapbase[MEM2_ALLOC_TABLE_SIZE] __attribute__((at(0XC01F4000+MEM2_MAX_SIZE)));	//外部SRAM内存池MAP
+u32 mem3mapbase[MEM3_ALLOC_TABLE_SIZE] __attribute__((at(0X20000000+MEM3_MAX_SIZE)));	//内部DTCM内存池MAP
+//内存管理参数	   
+const u32 memtblsize[SRAMBANK]={MEM1_ALLOC_TABLE_SIZE,MEM2_ALLOC_TABLE_SIZE,MEM3_ALLOC_TABLE_SIZE};	//内存表大小
+const u32 memblksize[SRAMBANK]={MEM1_BLOCK_SIZE,MEM2_BLOCK_SIZE,MEM3_BLOCK_SIZE};					//内存分块大小
+const u32 memsize[SRAMBANK]={MEM1_MAX_SIZE,MEM2_MAX_SIZE,MEM3_MAX_SIZE};							//内存总大小
 
-#include "my_malloc.h"
-
-#undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
-
-/* Block sizes must not get too small. */
-#define heapMINIMUM_BLOCK_SIZE	( ( u32 ) ( xHeapStructSize << 1 ) )
-
-/* Assumes 8bit bytes! */
-#define heapBITS_PER_BYTE		( ( u32 ) 8 )
-
-#define BYTE_ALIGNMENT 8
-#define BYTE_ALIGNMENT_MASK (0x0007)
-#define COVERAGE_TEST_MARKER()
-
-/*内存池(64字节对齐)*/
-static u8 mem1base[MEM1_MAX_SIZE] __attribute__((aligned (64)));													                //内部SRAM内存池
-static u8 mem2base[MEM2_MAX_SIZE]; //__attribute__((aligned (64),section(".ARM.__at_0XC0600000")));					//外部SDRAM内存池,前面2M给LTDC用了(1280*800*2)
-static u8 mem3base[MEM3_MAX_SIZE] __attribute__((aligned (64),section(".ARM.__at_0X20000000")));					//内部DTCM内存池
-/* Define the linked list structure.  This is used to link free blocks in order
-of their memory address. */
-typedef struct A_BLOCK_LINK
+//内存管理控制器
+struct _m_mallco_dev mallco_dev=
 {
-	struct A_BLOCK_LINK *pxNextFreeBlock;	/*<< The next free block in the list. */
-	size_t xBlockSize;						/*<< The size of the free block. */
-} BlockLink_t;
+	my_mem_init,						//内存初始化
+	my_mem_perused,						//内存使用率
+	mem1base,mem2base,mem3base,			//内存池
+	mem1mapbase,mem2mapbase,mem3mapbase,//内存管理状态表
+	0,0,0,  		 					//内存管理未就绪
+};
 
-static void prvInsertBlockIntoFreeList( MemType_t memx, BlockLink_t *pxBlockToInsert );
-static void prvHeapInit( MemType_t memx );
-/*-----------------------------------------------------------*/
-
-/* The size of the structure placed at the beginning of each allocated memory
-block must by correctly byte aligned. */
-static const size_t xHeapStructSize	= ( sizeof( BlockLink_t ) + ( ( size_t ) ( BYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) BYTE_ALIGNMENT_MASK );
-
-typedef struct _MallocMang
-{
-  u8 * ucHeap;
-  u32 heapSize;
-  u32 * pStartAddress;
-  BlockLink_t xStart;
-  BlockLink_t *pxEnd;
-  size_t xFreeBytesRemaining;             //内存堆剩余大小
-  size_t xMinimumEverFreeBytesRemaining;  //最小空闲内存块大小
-}MallocManger;
-
-MallocManger mallocManger[SRAMBANK];//内关管理器数组
-/* Gets set to the top bit of an size_t type.  When this bit in the xBlockSize
-member of an BlockLink_t structure is set then the block belongs to the
-application.  When the bit is free the block is still part of the free heap
-space. */
-static size_t xBlockAllocatedBit = 0;
-
-/**
-  * @brief   将某个内存块插入到空闲内存列表中
-  * @param   memx:内存堆类型
-  *          pxBlockToInsert:指向内存块的指针
-  * @retval  无
-  */
-static void prvInsertBlockIntoFreeList( MemType_t memx, BlockLink_t *pxBlockToInsert )
-{
-  BlockLink_t *pxIterator;
-  uint8_t *puc;
-
-	/*便利链表，直到找到可以插入的地方*/
-	for( pxIterator = &mallocManger[memx].xStart; pxIterator->pxNextFreeBlock < pxBlockToInsert; pxIterator = pxIterator->pxNextFreeBlock )
-	{
-		/* Nothing to do here, just iterate to the right position. */
-	}
-
-	/*判断是否可以和前面的内存合并*/
-	puc = ( uint8_t * ) pxIterator;
-	if( ( puc + pxIterator->xBlockSize ) == ( uint8_t * ) pxBlockToInsert )
-	{
-		pxIterator->xBlockSize += pxBlockToInsert->xBlockSize;
-		pxBlockToInsert = pxIterator;
-	}else  COVERAGE_TEST_MARKER();
-
-	/*检查是否可以和后面的内存块合并*/
-	puc = ( uint8_t * ) pxBlockToInsert;
-	if( ( puc + pxBlockToInsert->xBlockSize ) == ( uint8_t * ) pxIterator->pxNextFreeBlock )
-	{
-		if( pxIterator->pxNextFreeBlock != mallocManger[memx].pxEnd )
+//复制内存
+//*des:目的地址
+//*src:源地址
+//n:需要复制的内存长度(字节为单位)
+void mymemcpy(void *des,void *src,u32 n)  
+{  
+    u8 *xdes=des;
+	u8 *xsrc=src; 
+    while(n--)*xdes++=*xsrc++;  
+}  
+//设置内存
+//*s:内存首地址
+//c :要设置的值
+//count:需要设置的内存大小(字节为单位)
+void mymemset(void *s,u8 c,u32 count)  
+{  
+    u8 *xs = s;  
+    while(count--)*xs++=c;  
+}	
+//内存管理初始化  
+//memx:所属内存块
+void my_mem_init(u8 memx)  
+{  
+    mymemset(mallco_dev.memmap[memx],0,memtblsize[memx]*4);	//内存状态表数据清零  
+ 	mallco_dev.memrdy[memx]=1;								//内存管理初始化OK  
+}  
+//获取内存使用率
+//memx:所属内存块
+//返回值:使用率(扩大了10倍,0~1000,代表0.0%~100.0%)
+u16 my_mem_perused(u8 memx)  
+{  
+    u32 used=0;  
+    u32 i;  
+    for(i=0;i<memtblsize[memx];i++)  
+    {  
+        if(mallco_dev.memmap[memx][i])used++; 
+    } 
+    return (used*1000)/(memtblsize[memx]);  
+}  
+//内存分配(内部调用)
+//memx:所属内存块
+//size:要分配的内存大小(字节)
+//返回值:0XFFFFFFFF,代表错误;其他,内存偏移地址 
+u32 my_mem_malloc(u8 memx,u32 size)  
+{  
+    signed long offset=0;  
+    u32 nmemb;	//需要的内存块数  
+	u32 cmemb=0;//连续空内存块数
+    u32 i;  
+    if(!mallco_dev.memrdy[memx])mallco_dev.init(memx);//未初始化,先执行初始化 
+    if(size==0)return 0XFFFFFFFF;//不需要分配
+    nmemb=size/memblksize[memx];  	//获取需要分配的连续内存块数
+    if(size%memblksize[memx])nmemb++;  
+    for(offset=memtblsize[memx]-1;offset>=0;offset--)//搜索整个内存控制区  
+    {     
+		if(!mallco_dev.memmap[memx][offset])cmemb++;//连续空内存块数增加
+		else cmemb=0;								//连续内存块清零
+		if(cmemb==nmemb)							//找到了连续nmemb个空内存块
 		{
-			/* Form one big block from the two blocks. */
-			pxBlockToInsert->xBlockSize += pxIterator->pxNextFreeBlock->xBlockSize;
-			pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock->pxNextFreeBlock;
-		}else  pxBlockToInsert->pxNextFreeBlock = mallocManger[memx].pxEnd;
-	}else  pxBlockToInsert->pxNextFreeBlock = pxIterator->pxNextFreeBlock;
-
-	/*没有任何内存合并，正常插入*/
-	if( pxIterator != pxBlockToInsert )
+            for(i=0;i<nmemb;i++)  					//标注内存块非空 
+            {  
+                mallco_dev.memmap[memx][offset+i]=nmemb;  
+            }  
+            return (offset*memblksize[memx]);//返回偏移地址  
+		}
+    }  
+    return 0XFFFFFFFF;//未找到符合分配条件的内存块  
+}  
+//释放内存(内部调用) 
+//memx:所属内存块
+//offset:内存地址偏移
+//返回值:0,释放成功;1,释放失败;  
+u8 my_mem_free(u8 memx,u32 offset)  
+{  
+    int i;  
+    if(!mallco_dev.memrdy[memx])//未初始化,先执行初始化
 	{
-		pxIterator->pxNextFreeBlock = pxBlockToInsert;
-	}else  COVERAGE_TEST_MARKER();
+		mallco_dev.init(memx);    
+        return 1;//未初始化  
+    }  
+    if(offset<memsize[memx])//偏移在内存池内. 
+    {  
+        int index=offset/memblksize[memx];			//偏移所在内存块号码  
+        int nmemb=mallco_dev.memmap[memx][index];	//内存块数量
+        for(i=0;i<nmemb;i++)  						//内存块清零
+        {  
+            mallco_dev.memmap[memx][index+i]=0;  
+        }  
+        return 0;  
+    }else return 2;//偏移超区了.  
+}  
+//释放内存(外部调用) 
+//memx:所属内存块
+//ptr:内存首地址 
+void myfree(u8 memx,void *ptr)  
+{  
+	u32 offset;   
+	if(ptr==NULL)return;//地址为0.  
+ 	offset=(u32)ptr-(u32)mallco_dev.membase[memx];     
+    my_mem_free(memx,offset);	//释放内存      
+}  
+//分配内存(外部调用)
+//memx:所属内存块
+//size:内存大小(字节)
+//返回值:分配到的内存首地址.
+void *mymalloc(u8 memx,u32 size)  
+{  
+    u32 offset;   
+	offset=my_mem_malloc(memx,size);  	   	 	   
+    if(offset==0XFFFFFFFF)return NULL;  
+    else return (void*)((u32)mallco_dev.membase[memx]+offset);  
+}  
+//重新分配内存(外部调用)
+//memx:所属内存块
+//*ptr:旧内存首地址
+//size:要分配的内存大小(字节)
+//返回值:新分配到的内存首地址.
+void *myrealloc(u8 memx,void *ptr,u32 size)  
+{  
+    u32 offset;    
+    offset=my_mem_malloc(memx,size);   	
+    if(offset==0XFFFFFFFF)return NULL;     
+    else  
+    {  									   
+	    mymemcpy((void*)((u32)mallco_dev.membase[memx]+offset),ptr,size);	//拷贝旧内存内容到新内存   
+        myfree(memx,ptr);  											  		//释放旧内存
+        return (void*)((u32)mallco_dev.membase[memx]+offset);  				//返回新内存首地址
+    }  
 }
 
-/**
-  * @brief   分配内存
-  * @param   memx:内存堆类型
-  *          xWantedSize:所需要的大小
-  * @retval  指向所分配内存的指针
-  */
-void *myMalloc(MemType_t memx,u32 xWantedSize)
-{
-  BlockLink_t *pxBlock, *pxPreviousBlock, *pxNewBlockLink;
-  void *pvReturn = NULL;
-
-	//关闭中断
-	{
-		/*如果是首次调用，则需要进行初始化*/
-		if( mallocManger[memx].pxEnd == NULL ) prvHeapInit(memx);
-		else  COVERAGE_TEST_MARKER();
-
-		/* Check the requested block size is not so large that the top bit is
-		set.  The top bit of the block size member of the BlockLink_t structure
-		is used to determine who owns the block - the application or the
-		kernel, so it must be free. */
-		if( ( xWantedSize & xBlockAllocatedBit ) == 0 )
-		{
-			/*实际申请内存大小需要加上头部（8字节）*/
-			if( xWantedSize > 0 )
-			{
-				xWantedSize += xHeapStructSize;//加上头部（8字节）
-				/*字节对齐*/
-				if( ( xWantedSize & BYTE_ALIGNMENT_MASK ) != 0x00 )
-				{
-					/* Byte alignment required. */
-					xWantedSize += ( BYTE_ALIGNMENT - ( xWantedSize & BYTE_ALIGNMENT_MASK ) );
-					MY_ASSERT( ( xWantedSize & BYTE_ALIGNMENT_MASK ) == 0 );
-				}else  COVERAGE_TEST_MARKER();
-			}else  COVERAGE_TEST_MARKER();
-
-			if( ( xWantedSize > 0 ) && ( xWantedSize <= mallocManger[memx].xFreeBytesRemaining ) )
-			{
-				/*从起始地址开始查找链表，直到找到size满足需要的block*/
-				pxPreviousBlock = &mallocManger[memx].xStart;
-				pxBlock = mallocManger[memx].xStart.pxNextFreeBlock;
-				while( ( pxBlock->xBlockSize < xWantedSize ) && ( pxBlock->pxNextFreeBlock != NULL ) )
-				{
-					pxPreviousBlock = pxBlock;
-					pxBlock = pxBlock->pxNextFreeBlock;
-				}
-
-				if( pxBlock != mallocManger[memx].pxEnd )
-				{
-					/*返回指针指向当前的内存块（需要跳过头部）*/
-					pvReturn = ( void * ) ( ( ( uint8_t * ) pxPreviousBlock->pxNextFreeBlock ) + xHeapStructSize );
-
-					/*从链表剔除所分配的内存块*/
-					pxPreviousBlock->pxNextFreeBlock = pxBlock->pxNextFreeBlock;
-
-					/*如果当前块内存大于所需要的，则将其进行拆分*/
-					if( ( pxBlock->xBlockSize - xWantedSize ) > heapMINIMUM_BLOCK_SIZE )
-					{
-						/*将拆分出来的内存块作为链表插入到内存块链表中*/
-						pxNewBlockLink = ( void * ) ( ( ( uint8_t * ) pxBlock ) + xWantedSize );
-						MY_ASSERT( ( ( ( size_t ) pxNewBlockLink ) & BYTE_ALIGNMENT_MASK ) == 0 );
-
-						/*重新计算当前内存块尺寸，以便其满足需求*/
-						pxNewBlockLink->xBlockSize = pxBlock->xBlockSize - xWantedSize;
-						pxBlock->xBlockSize = xWantedSize;
-
-						/*将其插入空闲链表中*/
-						prvInsertBlockIntoFreeList( memx, pxNewBlockLink );
-					}else  COVERAGE_TEST_MARKER();
-
-					mallocManger[memx].xFreeBytesRemaining -= pxBlock->xBlockSize;
-
-					if( mallocManger[memx].xFreeBytesRemaining < mallocManger[memx].xMinimumEverFreeBytesRemaining )
-					{
-						mallocManger[memx].xMinimumEverFreeBytesRemaining = mallocManger[memx].xFreeBytesRemaining;
-					}else  COVERAGE_TEST_MARKER();
-
-					/*将该内存块标记为已用*/
-					pxBlock->xBlockSize |= xBlockAllocatedBit;
-					pxBlock->pxNextFreeBlock = NULL;
-				}else  COVERAGE_TEST_MARKER();
-			}else  COVERAGE_TEST_MARKER();
-		}else  COVERAGE_TEST_MARKER();
-	}
-	//开启中断
-	MY_ASSERT( ( ( ( size_t ) pvReturn ) & ( size_t ) BYTE_ALIGNMENT_MASK ) == 0 );
-	return pvReturn;
-}
-
-/**
-  * @brief   释放内存
-  * @param   memx:内存类型
-  *          pv:指向内存的指针
-  * @retval  无
-  */
-void myFree(MemType_t memx, void *pv)
-{
-  uint8_t *puc = ( uint8_t * ) pv;
-  BlockLink_t *pxLink;
-
-	if( pv != NULL )
-	{
-		puc -= xHeapStructSize;   //减去头部，才是该内存块实际的地址
-		pxLink = ( void * ) puc;  //防止编译器报错
-
-		/*检查该内存块是否已经被分配过*/
-		MY_ASSERT( ( pxLink->xBlockSize & xBlockAllocatedBit ) != 0 );
-		MY_ASSERT( pxLink->pxNextFreeBlock == NULL );
-
-		if( ( pxLink->xBlockSize & xBlockAllocatedBit ) != 0 )
-		{
-			if( pxLink->pxNextFreeBlock == NULL )
-			{
-				/*最高位置0，表示该块已经处于未分配状态*/
-				pxLink->xBlockSize &= ~xBlockAllocatedBit;
-
-				//禁用中断
-				{
-					/*将该内存块加入到内存块链表中*/
-					mallocManger[memx].xFreeBytesRemaining += pxLink->xBlockSize;
-					prvInsertBlockIntoFreeList( memx, ( ( BlockLink_t * ) pxLink ) );
-				}
-				//启用中断
-			}else  COVERAGE_TEST_MARKER();
-		}else  COVERAGE_TEST_MARKER();
-	}
-}
-/*-----------------------------------------------------------*/
-
-/**
-  * @brief   返回内存堆剩余大小
-  * @param   memx:内存堆类型
-  * @retval  剩余大小
-  */
-u32 getFreeHeapSize(MemType_t memx)
-{
-  return mallocManger[memx].xFreeBytesRemaining;
-}
-
-/**
-  * @brief   返回最小空闲内存块大小
-  * @param   memx:内存堆类型
-  * @retval  剩余大小
-  */
-u32 getMinimumEverFreeHeapSize(MemType_t memx)
-{
-  return mallocManger[memx].xMinimumEverFreeBytesRemaining;
-}
-
-/**
-  * @brief   初始化堆内存块
-  * @param   memx:内存块名称
-  * @retval  无
-  */
-static void prvHeapInit( MemType_t memx )
-{
-	BlockLink_t *pxFirstFreeBlock;
-  uint8_t *pucAlignedHeap;      //字节对齐后的起始地址
-  size_t uxAddress;
-	size_t xTotalHeapSize = mallocManger[memx].heapSize;
-  /*根据堆类型来确定不同的堆大小，以及起始地址*/
-  if (memx == MEM_SRAM)
-  {
-    mallocManger[memx].heapSize = MEM1_MAX_SIZE;
-    mallocManger[memx].ucHeap = mem1base;
-  }else if (memx == MEM_DRAM)
-  {
-    mallocManger[memx].heapSize = MEM2_MAX_SIZE;
-    mallocManger[memx].ucHeap = mem2base;
-  }else
-  {
-    mallocManger[memx].heapSize = MEM3_MAX_SIZE;
-    mallocManger[memx].ucHeap = mem3base;
-  } 
-
-
-
-
-	/*保证字节对齐*/
-	uxAddress = ( size_t ) mallocManger[memx].ucHeap;
-	if( ( uxAddress & BYTE_ALIGNMENT_MASK ) != 0 )
-	{
-		uxAddress += ( BYTE_ALIGNMENT - 1 );
-		uxAddress &= ~( ( size_t ) BYTE_ALIGNMENT_MASK );
-		xTotalHeapSize -= uxAddress - ( size_t ) mallocManger[memx].ucHeap;
-	}
-
-	pucAlignedHeap = ( uint8_t * ) uxAddress;
-
-	/* xStart为可用内存块链表头*/
-	mallocManger[memx].xStart.pxNextFreeBlock = ( void * ) pucAlignedHeap;
-	mallocManger[memx].xStart.xBlockSize = ( size_t ) 0;
-
-	/* pxEnd为可用内存块链表尾，放在内存堆尾部*/
-	uxAddress = ( ( size_t ) pucAlignedHeap ) + xTotalHeapSize;
-	uxAddress -= xHeapStructSize;
-	uxAddress &= ~( ( size_t ) BYTE_ALIGNMENT_MASK );
-	mallocManger[memx].pxEnd = ( void * ) uxAddress;
-	mallocManger[memx].pxEnd->xBlockSize = 0;
-	mallocManger[memx].pxEnd->pxNextFreeBlock = NULL;
-
-	/*初始化之后，系统只有一个内存块*/
-	pxFirstFreeBlock = ( void * ) pucAlignedHeap;
-	pxFirstFreeBlock->xBlockSize = uxAddress - ( size_t ) pxFirstFreeBlock;
-	pxFirstFreeBlock->pxNextFreeBlock = mallocManger[memx].pxEnd;
-
-	/* Only one block exists - and it covers the entire usable heap space. */
-	mallocManger[memx].xMinimumEverFreeBytesRemaining = pxFirstFreeBlock->xBlockSize;
-	mallocManger[memx].xFreeBytesRemaining = pxFirstFreeBlock->xBlockSize;
-
-	/* Work out the position of the top bit in a size_t variable. */
-	xBlockAllocatedBit = ( ( size_t ) 1 ) << ( ( sizeof( size_t ) * heapBITS_PER_BYTE ) - 1 );
-}

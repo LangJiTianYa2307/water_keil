@@ -17,7 +17,7 @@ int main(void)
 {
   hardwareInit(); //Ó²¼þ³õÊ¼»¯
   xTaskCreate((TaskFunction_t )start_task,            
-	
+	            (const char*    )"start_task",  
               (uint16_t       )START_STK_SIZE,        
               (void*          )NULL,                  
               (UBaseType_t    )START_TASK_PRIO,       

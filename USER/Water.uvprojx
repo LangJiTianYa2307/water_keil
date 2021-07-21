@@ -319,7 +319,7 @@
             <PlainCh>0</PlainCh>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
-            <wLevel>2</wLevel>
+            <wLevel>1</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
@@ -333,7 +333,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F767xx,USE_HAL_DRIVER,DEBUG,OS_CRITICAL_METHOD</Define>
+              <Define>STM32F767xx,USE_HAL_DRIVER,DEBUG,OS_CRITICAL_METHOD,__CC_ARM</Define>
               <Undefine></Undefine>
               <IncludePath>..\CORE;..\OBJ;..\USER;..\HALLIB\STM32F7xx_HAL_Driver\Inc;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\HARDWARE\LED;..\FreeRTOS\include;..\FreeRTOS\portable\RVDS\ARM_CM7\r0p1;..\HARDWARE\ADC;..\HARDWARE\LAN8720;..\HARDWARE\MPU;..\HARDWARE\PCF8574;..\HARDWARE\RTC;..\HARDWARE\SDRAM;..\HARDWARE\MY_TIMER;..\HARDWARE\IIC;..\MALLOC;..\LWIP\lwip_app\lwip_comm;..\LWIP\lwip_app\tcp_client_demo;..\LWIP\lwip_app\tcp_server_demo;..\LWIP\lwip_app\udp_demo;..\LWIP\lwip_app\web_server_demo;..\LWIP\lwip-1.4.1\src\include;..\LWIP\lwip-1.4.1\src\include\ipv4;..\LWIP\lwip-1.4.1\src\include\netif;..\LWIP\arch;..\LWIP\lwip-1.4.1\src\api;..\LWIP;..\HARDWARE\KEY;..\SYSTEM\my_malloc;..\HARDWARE\24C02;..\HARDWARE\MY_SPI;..\HARDWARE\softIIcProxy;..\Modbus\ascii;..\Modbus\functions;..\Modbus\include;..\Modbus\port;..\Modbus\rtu;..\Modbus\tcp;..\ApplicationLayer;..\BusinessLogicLayer;..\FunctionMoudleLayer;..\HARDWARE\ADS_1256;..\Modbus</IncludePath>
             </VariousControls>

@@ -57,10 +57,10 @@ u8 lwip_comm_mem_malloc(void)
 	u32 ramheapsize; 
 	mempsize = memp_get_memorysize();			    
   printf("mes size is   %d\r\n", mempsize);
-	memp_memory = myMalloc(MEM_SRAM, mempsize);	
+	memp_memory = mymalloc(SRAMIN, mempsize);	
 	ramheapsize = LWIP_MEM_ALIGN_SIZE(MEM_SIZE) + 2*LWIP_MEM_ALIGN_SIZE(4*3) + MEM_ALIGNMENT;
   printf("ram_heap size is   %d\r\n", ramheapsize);
-	ram_heap = myMalloc(MEM_SRAM, ramheapsize);	
+	ram_heap = mymalloc(SRAMIN, ramheapsize);	
 	if(!memp_memory||!ram_heap)             
 	{
 		lwip_comm_mem_free();
@@ -76,8 +76,8 @@ u8 lwip_comm_mem_malloc(void)
   */
 void lwip_comm_mem_free(void)
 { 	
-	myFree(MEM_SRAM,memp_memory);
-	myFree(MEM_SRAM,ram_heap);
+	myfree(SRAMIN,memp_memory);
+	myfree(SRAMIN,ram_heap);
 }
 
 /**

@@ -178,10 +178,10 @@ u32  ETH_GetRxPktSize(ETH_DMADescTypeDef *DMARxDesc)
 //    ??,??
 u8 ETH_Mem_Malloc(void)
 { 
-	DMARxDscrTab = myMalloc(MEM_SRAM, ETH_RXBUFNB * sizeof(ETH_DMADescTypeDef));//????
-	DMATxDscrTab = myMalloc(MEM_SRAM, ETH_TXBUFNB * sizeof(ETH_DMADescTypeDef));//????  
-	Rx_Buff = myMalloc(MEM_SRAM, ETH_RX_BUF_SIZE * ETH_RXBUFNB);	//????
-	Tx_Buff = myMalloc(MEM_SRAM, ETH_TX_BUF_SIZE * ETH_TXBUFNB);	//????
+	DMARxDscrTab = mymalloc(SRAMIN, ETH_RXBUFNB * sizeof(ETH_DMADescTypeDef));//????
+	DMATxDscrTab = mymalloc(SRAMIN, ETH_TXBUFNB * sizeof(ETH_DMADescTypeDef));//????  
+	Rx_Buff = mymalloc(SRAMIN, ETH_RX_BUF_SIZE * ETH_RXBUFNB);	//????
+	Tx_Buff = mymalloc(SRAMIN, ETH_TX_BUF_SIZE * ETH_TXBUFNB);	//????
 	if(!(u32)&DMARxDscrTab||!(u32)&DMATxDscrTab||!(u32)&Rx_Buff||!(u32)&Tx_Buff)
 	{
 		ETH_Mem_Free();
@@ -193,10 +193,10 @@ u8 ETH_Mem_Malloc(void)
 //??ETH ?????????
 void ETH_Mem_Free(void)
 { 
-	myFree(MEM_SRAM,DMARxDscrTab);  //????
-	myFree(MEM_SRAM,DMATxDscrTab);  //????
-	myFree(MEM_SRAM,Rx_Buff);		    //????
-	myFree(MEM_SRAM,Tx_Buff);		    //????  
+	myfree(SRAMIN,DMARxDscrTab);  //????
+	myfree(SRAMIN,DMATxDscrTab);  //????
+	myfree(SRAMIN,Rx_Buff);		    //????
+	myfree(SRAMIN,Tx_Buff);		    //????  
 }
 
 
